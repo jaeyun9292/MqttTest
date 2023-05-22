@@ -6,22 +6,32 @@ import android.view.View
 import android.view.View.*
 import androidx.appcompat.app.AppCompatActivity
 import com.example.mqtttest.PreferenceUtil.ipAddress
-import com.example.mqtttest.PreferenceUtil.topic
+import com.example.mqtttest.PreferenceUtil.publishTopic
+import com.example.mqtttest.PreferenceUtil.subscribeTopic
 import com.example.mqtttest.databinding.ActivityMainBinding
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.MqttCallback
 import org.eclipse.paho.client.mqttv3.MqttClient
 import org.eclipse.paho.client.mqttv3.MqttMessage
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 
 class MainActivity : AppCompatActivity(), OnClickListener {
     private val TAG = "MQTTService"
 
     private var _binding: ActivityMainBinding? = null
     private val binding get() = _binding!!
+
+    private val gson = GsonBuilder().setPrettyPrinting().create()
 
     private var mqttClient: MqttClient? = null
     private val dispatcherMain = CoroutineScope(Dispatchers.Main)
@@ -31,72 +41,113 @@ class MainActivity : AppCompatActivity(), OnClickListener {
         _binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.ipEt.setText(PreferenceUtil.ipAddress)
-        binding.topicEt.setText(PreferenceUtil.topic)
+        binding.brokerIpEt.setText(PreferenceUtil.ipAddress)
+        binding.subscribeTopicEt.setText(PreferenceUtil.subscribeTopic)
+        binding.publishTopicEt.setText(PreferenceUtil.publishTopic)
 
         binding.connectBtn.setOnClickListener(this@MainActivity)
-        binding.sendBtn.setOnClickListener(this@MainActivity)
+        binding.subscribeBtn.setOnClickListener(this@MainActivity)
+        binding.publishBtn.setOnClickListener(this@MainActivity)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mqttClient?.disconnect()
+        _binding = null
+    }
+
+    override fun onClick(v: View?) {
+        when (v) {
+            binding.connectBtn -> connectBrokerServer()
+            binding.subscribeBtn -> subscribeTopic()
+            binding.publishBtn -> {
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        withContext(Dispatchers.Main) {
+                            val isSelected = !binding.publishBtn.isSelected
+                            binding.publishBtn.isSelected = isSelected
+                            val publishBtnText = if (isSelected) "멈춤" else "퍼블리시"
+                            binding.publishBtn.text = publishBtnText
+                        }
+                        val sendData = binding.publishMessageEt.text.toString()
+//                        binding.publishMessageEt.text = null
+                        while (binding.publishBtn.isSelected) {
+                            publishMqttMessage(sendData)
+                            delay(1000)
+                        }
+                    } catch (exception: Exception) {
+                        withContext(Dispatchers.Main) { showDebugLog("Exception : $exception") }
+                    }
+                }
+            }
+        }
     }
 
     suspend fun showDebugLog(data: String) {
         Log.e(TAG, "showDebugLog() : $data")
         val str = "$data \n\n"
         binding.debugTv.append(str)
-
         binding.scrollview.post {
             binding.scrollview.fullScroll(View.FOCUS_DOWN)
         }
     }
 
+    private fun connectBrokerServer() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+//                mqtt 서버에 연결하려면 우선 서버의 주소(ip주소 혹은 도메인)가 필요합니다. 구조는 아래와 같습니다.
+//                ex) "tcp://"+ "서버 주소" + ":1883"
+//                => 통신 방식: tcp | 서버의 ip주소 또는 도메인 주소 | 통신할 서버의 포트 번호
+                ipAddress = binding.brokerIpEt.text.toString()
+                val serverIp = "tcp://$ipAddress"
+
+//                MqttClient()는 Mqtt서버와 연결하기 위한 정보 설정입니다.
+//                => MqttClient(서버 IP, 클라이언트 ID, 메시지 저장(캐시와 비슷한 개념))
+                mqttClient = MqttClient(serverIp, MqttClient.generateClientId(), null)
+
+                withContext(Dispatchers.Main) { showDebugLog("try connectBrokerServer() - [ip : $serverIp]") }
+                mqttClient!!.connect()
+            } catch (exception: Exception) {
+                withContext(Dispatchers.Main) { showDebugLog("Exception : $exception") }
+            }
+        }
+    }
+
     private fun subscribeTopic() {
         CoroutineScope(Dispatchers.IO).launch {
-            ipAddress = binding.ipEt.text.toString()
-            topic = binding.topicEt.text.toString()
-
-            // mqtt 서버에 연결하려면 우선 서버의 주소(ip주소 혹은 도메인)가 필요합니다. 구조는 아래와 같습니다.
-            // ex) "tcp://"+ "서버 주소" + ":1883"
-
-            // tcp:// → 통신 방식을 tcp로 설정합니다.
-            // 서버 주소 → 서버의 ip주소 혹은 도메인 주소입니다.
-            // :1883 → 통신할 서버의 포트입니다. 기본 설정은 1883번 포트로 통신합니다.
-            val serverIp = "tcp://$ipAddress"
-
-            // 통신하고자 하는 토픽을 작성하면 됩니다.
-            val topic = topic
-
-            // MqttClient()는 Mqtt서버와 연결하기 위한 정보 설정입니다.
-            // 3가지 인자가 있는데, 순서대로
-            // 서버 IP, 클라이언트 ID, 메시지 저장(캐시와 비슷한 개념)
-            mqttClient = MqttClient(serverIp, MqttClient.generateClientId(), null)
-            withContext(Dispatchers.Main) { showDebugLog("try Subscribe() - [IP : $serverIp  |  TOPIC : $topic]") }
-
             try {
-                mqttClient!!.connect()
-                //구독 설정입니다.
-                //구독을 하고자 하는 토픽을 인자 값으로 넣어주면 됩니다.
-                mqttClient!!.subscribe(topic)
+                subscribeTopic = binding.subscribeTopicEt.text.toString()
+                val topic = subscribeTopic
+                withContext(Dispatchers.Main) { showDebugLog("try subscribeTopic() - [topic : $topic]") }
 
-                // 콜백 설정입니다.
-                // 구독하는 토픽으로부터 오는 콜백을 처리하는 부분입니다.
-                // 연결 끊김, 메시지도착, 전송완료 이렇게 세 메소드가 존재합니다.
+                // 구독 => subscribe(토픽)
+                mqttClient!!.subscribe(topic)
                 mqttClient!!.setCallback(object : MqttCallback {
                     override fun connectionLost(throwable: Throwable?) {
-                        //연결이 끊겼을 때
+                        //연결 끊김
                         dispatcherMain.launch {
                             showDebugLog("connectionLost() - [$throwable]")
                         }
                     }
 
                     override fun messageArrived(topic: String?, message: MqttMessage?) {
-                        //메세지가 도착했을 때
-                        //인자 값으로 받아오는 p0는 토픽을 의미하며, p1은 메시지를 의미합니다.
+                        // 메시지 수신
+                        val receivedMessage = if (isJsonString(message.toString())) {
+                            val receivedJsonElement = JsonParser.parseString(message.toString())
+                            val receivedJsonString = receivedJsonElement.asJsonObject.get("name").asString
+                            Log.e(TAG, "messageArrived  -  Message Is Json")
+                            receivedJsonString
+                        } else {
+                            Log.e(TAG, "messageArrived  -  Message Is NOT Json")
+                            message.toString()
+                        }
                         dispatcherMain.launch {
-                            showDebugLog("messageArrived() - [topic: $topic  |  message: $message]")
+                            showDebugLog("messageArrived() - [topic: $topic  |  message: $receivedMessage]")
                         }
                     }
 
                     override fun deliveryComplete(deliveryToken: IMqttDeliveryToken?) {
-                        //메세지가 도착 하였을 때
+                        // 메시지 전송 완료
                         dispatcherMain.launch {
                             showDebugLog("deliveryComplete() - [$deliveryToken]")
                         }
@@ -108,30 +159,41 @@ class MainActivity : AppCompatActivity(), OnClickListener {
         }
     }
 
-    override fun onClick(v: View?) {
-        when (v) {
-            binding.connectBtn -> subscribeTopic()
-            binding.sendBtn -> {
-                if (mqttClient?.isConnected == true) {
-                    val sendData = binding.debugEt.text.toString()
-                    binding.debugEt.text = null
+    private suspend fun publishMqttMessage(sendData: String) {
+        try {
+            if (mqttClient?.isConnected == true) {
+                publishTopic = binding.publishTopicEt.text.toString()
 
-                    // 메시지 발행(서버로 전송)입니다.
-                    // 발행을 하기 위해서는 publish란 메서드를 사용하며 인자는 아래와 같습니다.
-                    // publish(토픽, 메시지)
-                    // 토픽은 2번에서 설정한 토픽으로 지정하시면 됩니다. 단 여기서 메시지는 String 타입이 아닌 byteArray타입입니다.
-                    mqttClient!!.publish(topic, MqttMessage(sendData.toByteArray()))
-                    dispatcherMain.launch { showDebugLog("try Publish() - [topic : $topic  |  sendData : $sendData]") }
-                } else {
-                    dispatcherMain.launch { showDebugLog("Client Is Not Connected") }
-                }
+                val jsonObject = JsonObject()
+                jsonObject.addProperty("name", sendData)
+                val sendJsonStr = gson.toJson(jsonObject)
+                // 발행 => publish(토픽, 메시지)
+                // 메시지는 String 타입이 아닌 byteArray타입입니다.
+                mqttClient!!.publish(publishTopic, MqttMessage(sendJsonStr.toByteArray()))
+                dispatcherMain.launch { showDebugLog("publish MqttMessage() - [topic : $publishTopic]\nsendData :\n$sendJsonStr") }
+            } else {
+                dispatcherMain.launch { showDebugLog("Client Is Not Connected") }
+            }
+        } catch (exception: Exception) {
+            throw exception
+        }
+
+    }
+
+
+    fun isJsonString(input: String): Boolean {
+        val isJson = try {
+            val jsonObject = JSONObject(input)
+            true
+        } catch (e: JSONException) {
+            try {
+                val jsonArray = JSONArray(input)
+                true
+            } catch (e2: JSONException) {
+                false
             }
         }
+        return isJson
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        mqttClient?.disconnect()
-        _binding = null
-    }
 }

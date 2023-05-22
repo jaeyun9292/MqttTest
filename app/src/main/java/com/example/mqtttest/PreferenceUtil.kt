@@ -13,15 +13,20 @@ object PreferenceUtil {
     private const val KEY = "my_Secret_Key___"
 
     const val IP_ADDRESS = "ip"
-    const val TOPIC_NAME = "topic"
+    const val PUBLISH_TOPIC = "publish_topic"
+    const val SUBSCRIBE_TOPIC = "subscribe_topic"
 
     var ipAddress
         get() = getData(IP_ADDRESS) ?: "192.168.11.23:1883"
         set(value) = setData(IP_ADDRESS, value)
 
-    var topic
-        get() = getData(TOPIC_NAME) ?: "/any"
-        set(value) = setData(TOPIC_NAME, value)
+    var publishTopic
+        get() = getData(PUBLISH_TOPIC) ?: "/android"
+        set(value) = setData(PUBLISH_TOPIC, value)
+
+    var subscribeTopic
+        get() = getData(SUBSCRIBE_TOPIC) ?: "/unity"
+        set(value) = setData(SUBSCRIBE_TOPIC, value)
 
     private fun setData(key: String, data: String) {
         val editor = prefs.edit()

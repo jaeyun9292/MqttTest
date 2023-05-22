@@ -11,14 +11,16 @@
         android:id="@+id/scrollview"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="50dp"
+        android:layout_marginBottom="40dp"
         android:background="@color/white"
         android:paddingHorizontal="20dp"
         android:paddingVertical="6dp"
         app:layout_constraintBottom_toTopOf="@+id/guideline3"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0">
 
         <androidx.appcompat.widget.AppCompatTextView
             android:id="@+id/debug_tv"
@@ -39,16 +41,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.7" />
-
+        app:layout_constraintGuide_percent="0.22" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.25" />
-
+        app:layout_constraintGuide_percent="0.8" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline3"
@@ -57,116 +57,136 @@
         android:orientation="horizontal"
         app:layout_constraintGuide_percent="0.6" />
 
-
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline4"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.7" />
-
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline5"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.8" />
-
-
     <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/ip_tv"
+        android:id="@+id/broker_ip_tv"
         android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="3dp"
         android:gravity="center"
-        android:text="IP :"
-        android:textSize="15sp"
-        app:layout_constraintBottom_toBottomOf="@+id/ip_et"
-        app:layout_constraintEnd_toStartOf="@+id/guideline2"
+        android:text="중개자 아이피 :"
+        android:textSize="13sp"
+        app:layout_constraintEnd_toStartOf="@+id/guideline1"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/ip_et" />
-
-    <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/topic_tv"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:gravity="center"
-        android:text="TOPIC :"
-        android:textSize="15sp"
-        app:layout_constraintBottom_toBottomOf="@+id/topic_et"
-        app:layout_constraintEnd_toEndOf="@+id/ip_tv"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/topic_et" />
-
-    <androidx.appcompat.widget.AppCompatEditText
-        android:id="@+id/ip_et"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="20dp"
-        android:paddingHorizontal="10dp"
-        android:textSize="22sp"
-        app:layout_constraintBottom_toTopOf="@+id/guideline4"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/ip_tv"
         app:layout_constraintTop_toTopOf="@+id/guideline3" />
 
-
     <androidx.appcompat.widget.AppCompatEditText
-        android:id="@+id/topic_et"
+        android:id="@+id/broker_ip_et"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:paddingHorizontal="10dp"
-        android:textSize="22sp"
-        app:layout_constraintBottom_toTopOf="@+id/guideline5"
-        app:layout_constraintEnd_toStartOf="@+id/guideline1"
-        app:layout_constraintStart_toEndOf="@+id/topic_tv"
-        app:layout_constraintTop_toBottomOf="@+id/ip_et" />
-
+        android:paddingHorizontal="15dp"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toBottomOf="@+id/broker_ip_tv"
+        app:layout_constraintEnd_toStartOf="@+id/guideline2"
+        app:layout_constraintStart_toEndOf="@+id/broker_ip_tv"
+        app:layout_constraintTop_toTopOf="@+id/guideline3" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/connect_btn"
         android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:text="CONNECT"
-        app:layout_constraintBottom_toBottomOf="@+id/topic_et"
-        app:layout_constraintEnd_toEndOf="@+id/ip_et"
-        app:layout_constraintStart_toStartOf="@+id/guideline1"
-        app:layout_constraintTop_toTopOf="@+id/topic_et" />
-
+        android:layout_height="50dp"
+        android:layout_marginEnd="5dp"
+        android:text="연결"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toTopOf="@+id/subscribe_topic_et"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/guideline2"
+        app:layout_constraintTop_toTopOf="@+id/guideline3" />
 
     <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/message_tv"
+        android:id="@+id/subscribe_topic_tv"
         android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_height="50dp"
         android:gravity="center"
-        android:text="MESSAGE :"
-        android:textSize="15sp"
-        app:layout_constraintBottom_toBottomOf="@+id/debug_et"
-        app:layout_constraintEnd_toStartOf="@+id/guideline2"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/debug_et" />
+        android:text="구독 토픽 :"
+        android:textSize="13sp"
+        app:layout_constraintEnd_toStartOf="@+id/guideline1"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@+id/broker_ip_tv"
+        app:layout_constraintTop_toBottomOf="@+id/broker_ip_tv" />
 
     <androidx.appcompat.widget.AppCompatEditText
-        android:id="@+id/debug_et"
+        android:id="@+id/subscribe_topic_et"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:paddingHorizontal="30dp"
-        android:textAlignment="viewEnd"
-        android:textSize="22sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/guideline1"
-        app:layout_constraintStart_toStartOf="@+id/guideline2"
-        app:layout_constraintTop_toTopOf="@+id/guideline5" />
+        android:paddingHorizontal="15dp"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toBottomOf="@+id/subscribe_topic_tv"
+        app:layout_constraintEnd_toStartOf="@+id/guideline2"
+        app:layout_constraintStart_toEndOf="@+id/subscribe_topic_tv"
+        app:layout_constraintTop_toBottomOf="@+id/broker_ip_tv" />
 
 
     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/send_btn"
+        android:id="@+id/subscribe_btn"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:text="구독"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toBottomOf="@+id/subscribe_topic_et"
+        app:layout_constraintEnd_toEndOf="@+id/connect_btn"
+        app:layout_constraintStart_toStartOf="@+id/guideline2"
+        app:layout_constraintTop_toBottomOf="@+id/broker_ip_et" />
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/publish_message_tv"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="30dp"
+        android:gravity="center"
+        android:text="보낼 메시지 :"
+        android:textSize="13sp"
+        app:layout_constraintEnd_toEndOf="@+id/broker_ip_tv"
+        app:layout_constraintStart_toStartOf="@+id/subscribe_topic_tv"
+        app:layout_constraintTop_toBottomOf="@+id/subscribe_topic_tv" />
+
+    <androidx.appcompat.widget.AppCompatEditText
+        android:id="@+id/publish_message_et"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="15dp"
+        android:text="JAEYUN"
+        android:textAlignment="viewEnd"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toBottomOf="@+id/publish_message_tv"
+        app:layout_constraintEnd_toStartOf="@+id/guideline2"
+        app:layout_constraintStart_toEndOf="@+id/publish_message_tv"
+        app:layout_constraintTop_toTopOf="@+id/publish_message_tv" />
+
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/publish_topic_tv"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:gravity="center"
+        android:text="발행 토픽 :"
+        android:textSize="13sp"
+        app:layout_constraintEnd_toStartOf="@+id/guideline1"
+        app:layout_constraintStart_toStartOf="@+id/publish_message_tv"
+        app:layout_constraintTop_toBottomOf="@+id/publish_message_tv" />
+
+    <androidx.appcompat.widget.AppCompatEditText
+        android:id="@+id/publish_topic_et"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="15dp"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toBottomOf="@+id/publish_topic_tv"
+        app:layout_constraintEnd_toStartOf="@+id/guideline2"
+        app:layout_constraintStart_toStartOf="@+id/guideline1"
+        app:layout_constraintTop_toBottomOf="@+id/publish_message_tv" />
+
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/publish_btn"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:text="SEND"
-        app:layout_constraintBottom_toBottomOf="@+id/debug_et"
-        app:layout_constraintEnd_toEndOf="@+id/connect_btn"
-        app:layout_constraintStart_toStartOf="@+id/guideline1"
-        app:layout_constraintTop_toTopOf="@+id/debug_et" />
+        android:text="발행"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toBottomOf="@+id/publish_topic_et"
+        app:layout_constraintEnd_toEndOf="@+id/subscribe_btn"
+        app:layout_constraintStart_toStartOf="@+id/guideline2"
+        app:layout_constraintTop_toTopOf="@+id/publish_message_et" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
