@@ -1,9 +1,10 @@
 package com.example.mqtttest
 
+import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.view.View.*
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import com.example.mqtttest.PreferenceUtil.ipAddress
 import com.example.mqtttest.PreferenceUtil.publishTopic
@@ -11,7 +12,6 @@ import com.example.mqtttest.PreferenceUtil.subscribeTopic
 import com.example.mqtttest.databinding.ActivityMainBinding
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -24,6 +24,10 @@ import org.eclipse.paho.client.mqttv3.MqttMessage
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+
 
 class MainActivity : AppCompatActivity(), OnClickListener {
     private val TAG = "MQTTService"
@@ -35,6 +39,8 @@ class MainActivity : AppCompatActivity(), OnClickListener {
 
     private var mqttClient: MqttClient? = null
     private val dispatcherMain = CoroutineScope(Dispatchers.Main)
+
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd | HH:mm:ss", Locale.KOREA)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +54,10 @@ class MainActivity : AppCompatActivity(), OnClickListener {
         binding.connectBtn.setOnClickListener(this@MainActivity)
         binding.subscribeBtn.setOnClickListener(this@MainActivity)
         binding.publishBtn.setOnClickListener(this@MainActivity)
+
+        window.navigationBarColor = Color.TRANSPARENT
+        window.statusBarColor = Color.TRANSPARENT
+//        window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
     }
 
     override fun onDestroy() {
@@ -66,7 +76,7 @@ class MainActivity : AppCompatActivity(), OnClickListener {
                         withContext(Dispatchers.Main) {
                             val isSelected = !binding.publishBtn.isSelected
                             binding.publishBtn.isSelected = isSelected
-                            val publishBtnText = if (isSelected) "멈춤" else "퍼블리시"
+                            val publishBtnText = if (isSelected) "멈춤" else "발행"
                             binding.publishBtn.text = publishBtnText
                         }
                         val sendData = binding.publishMessageEt.text.toString()
@@ -76,7 +86,7 @@ class MainActivity : AppCompatActivity(), OnClickListener {
                             delay(1000)
                         }
                     } catch (exception: Exception) {
-                        withContext(Dispatchers.Main) { showDebugLog("Exception : $exception") }
+                        withContext(Dispatchers.Main) { showDebugLog("에러 : $exception") }
                     }
                 }
             }
@@ -84,12 +94,19 @@ class MainActivity : AppCompatActivity(), OnClickListener {
     }
 
     suspend fun showDebugLog(data: String) {
-        Log.e(TAG, "showDebugLog() : $data")
-        val str = "$data \n\n"
+        val calendar = Calendar.getInstance()
+        val currentDateTime = dateFormat.format(calendar.time)
+
+        val text = binding.debugTv.text.toString()
+        if (binding.debugTv.text.length > 3000)
+            binding.debugTv.text = text.substring(300, text.length)
+
+        val str = "현재 시간 : $currentDateTime\n$data \n\n"
         binding.debugTv.append(str)
-        binding.scrollview.post {
-            binding.scrollview.fullScroll(View.FOCUS_DOWN)
-        }
+
+//        binding.scrollview.post {
+//            binding.scrollview.fullScroll(View.FOCUS_DOWN)
+//        }
     }
 
     private fun connectBrokerServer() {
@@ -132,24 +149,26 @@ class MainActivity : AppCompatActivity(), OnClickListener {
 
                     override fun messageArrived(topic: String?, message: MqttMessage?) {
                         // 메시지 수신
-                        val receivedMessage = if (isJsonString(message.toString())) {
-                            val receivedJsonElement = JsonParser.parseString(message.toString())
-                            val receivedJsonString = receivedJsonElement.asJsonObject.get("name").asString
-                            Log.e(TAG, "messageArrived  -  Message Is Json")
-                            receivedJsonString
-                        } else {
-                            Log.e(TAG, "messageArrived  -  Message Is NOT Json")
-                            message.toString()
-                        }
+//                        val receivedMessage = if (isJsonString(message.toString())) {
+//                            val receivedJsonElement = JsonParser.parseString(message.toString())
+//                            val receivedJsonString = receivedJsonElement.asJsonObject.get("name").asString
+//                            Log.e(TAG, "messageArrived  -  Message Is Json")
+//                            receivedJsonString
+//                        } else {
+//                            Log.e(TAG, "messageArrived  -  Message Is NOT Json")
+//                            message.toString()
+//                        }
+                        val receivedMessage = message.toString()
+
                         dispatcherMain.launch {
-                            showDebugLog("messageArrived() - [topic: $topic  |  message: $receivedMessage]")
+                            showDebugLog("메시지 수신 - [ 토픽 : $topic | 메시지 : $receivedMessage ]")
                         }
                     }
 
                     override fun deliveryComplete(deliveryToken: IMqttDeliveryToken?) {
                         // 메시지 전송 완료
                         dispatcherMain.launch {
-                            showDebugLog("deliveryComplete() - [$deliveryToken]")
+                            showDebugLog("메시지 전송 완료 - [$deliveryToken]")
                         }
                     }
                 })
@@ -170,7 +189,7 @@ class MainActivity : AppCompatActivity(), OnClickListener {
                 // 발행 => publish(토픽, 메시지)
                 // 메시지는 String 타입이 아닌 byteArray타입입니다.
                 mqttClient!!.publish(publishTopic, MqttMessage(sendJsonStr.toByteArray()))
-                dispatcherMain.launch { showDebugLog("publish MqttMessage() - [topic : $publishTopic]\nsendData :\n$sendJsonStr") }
+                dispatcherMain.launch { showDebugLog("try publishMqttMessage() - [topic : $publishTopic]\nsendData :\n$sendJsonStr") }
             } else {
                 dispatcherMain.launch { showDebugLog("Client Is Not Connected") }
             }
