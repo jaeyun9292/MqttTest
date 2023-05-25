@@ -2,9 +2,9 @@ package com.example.mqtttest
 
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.View.*
-import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import com.example.mqtttest.PreferenceUtil.ipAddress
 import com.example.mqtttest.PreferenceUtil.publishTopic
@@ -18,8 +18,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
-import org.eclipse.paho.client.mqttv3.MqttCallback
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended
 import org.eclipse.paho.client.mqttv3.MqttClient
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.MqttMessage
 import org.json.JSONArray
 import org.json.JSONException
@@ -112,18 +113,26 @@ class MainActivity : AppCompatActivity(), OnClickListener {
     private fun connectBrokerServer() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                if (mqttClient?.isConnected == true) mqttClient?.disconnect()
+
 //                mqtt 서버에 연결하려면 우선 서버의 주소(ip주소 혹은 도메인)가 필요합니다. 구조는 아래와 같습니다.
 //                ex) "tcp://"+ "서버 주소" + ":1883"
 //                => 통신 방식: tcp | 서버의 ip주소 또는 도메인 주소 | 통신할 서버의 포트 번호
                 ipAddress = binding.brokerIpEt.text.toString()
                 val serverIp = "tcp://$ipAddress"
+                withContext(Dispatchers.Main) { showDebugLog("try connectBrokerServer() - [ip : $serverIp]") }
 
 //                MqttClient()는 Mqtt서버와 연결하기 위한 정보 설정입니다.
 //                => MqttClient(서버 IP, 클라이언트 ID, 메시지 저장(캐시와 비슷한 개념))
-                mqttClient = MqttClient(serverIp, MqttClient.generateClientId(), null)
+                val option = MqttConnectOptions()
+//                option.connectionTimeout = 10
+//                option.keepAliveInterval = 10
+//                option.isCleanSession = true
+                option.isAutomaticReconnect = true
 
-                withContext(Dispatchers.Main) { showDebugLog("try connectBrokerServer() - [ip : $serverIp]") }
-                mqttClient!!.connect()
+                mqttClient = MqttClient(serverIp, MqttClient.generateClientId(), null)
+                mqttClient!!.connect(option)
+
             } catch (exception: Exception) {
                 withContext(Dispatchers.Main) { showDebugLog("Exception : $exception") }
             }
@@ -139,7 +148,14 @@ class MainActivity : AppCompatActivity(), OnClickListener {
 
                 // 구독 => subscribe(토픽)
                 mqttClient!!.subscribe(topic)
-                mqttClient!!.setCallback(object : MqttCallback {
+                mqttClient!!.setCallback(object : MqttCallbackExtended {
+                    override fun connectComplete(reconnect: Boolean, serverURI: String?) {
+                        if (reconnect) {
+                            // 연결이 다시 되었을 때, 기존에 구독했던 Topic을 다시 구독합니다.
+                            mqttClient!!.subscribe(topic)
+                        }
+                    }
+
                     override fun connectionLost(throwable: Throwable?) {
                         //연결 끊김
                         dispatcherMain.launch {
@@ -159,7 +175,6 @@ class MainActivity : AppCompatActivity(), OnClickListener {
 //                            message.toString()
 //                        }
                         val receivedMessage = message.toString()
-
                         dispatcherMain.launch {
                             showDebugLog("메시지 수신 - [ 토픽 : $topic | 메시지 : $receivedMessage ]")
                         }
